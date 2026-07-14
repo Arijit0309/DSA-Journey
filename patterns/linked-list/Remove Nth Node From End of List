@@ -1,0 +1,120 @@
+# LC 19 - Remove Nth Node From End of List
+
+## Problem
+
+Given the head of a linked list and a number `n`, remove the nth node from the end of the list and return the head.
+
+**Examples:**
+```
+Input:  1 -> 2 -> 3 -> 4 -> 5 -> None,  n = 2
+Output: 1 -> 2 -> 3 -> 5 -> None
+# 4 is 2nd from end, so we remove it
+
+Input:  1 -> 2 -> None,  n = 1
+Output: 1 -> None
+# 2 is 1st from end, so we remove it
+
+Input:  1 -> None,  n = 1
+Output: None
+# only node, remove it → empty list
+```
+
+**The core challenge:** Linked lists only move forward. You don't know the length until you reach `None`. So how do you find the nth node from the end?
+
+---
+
+## Approach 1 - Brute Force (Store All Nodes)
+
+**Idea:** Walk the list once, store every node in an array. Now you know the length and can index from the end.
+
+```
+arr = [node1, node2, node3, node4, node5]
+         0       1      2      3      4
+
+n = 2  →  remove index len-n = 3  (node4)
+           update index len-n-1 = 2  (node3)
+
+node3.next = node3.next.next  ✅
+```
+
+**Edge case:** If `len - n - 1 < 0`, you're removing the head. Just return `arr[1]` as the new head.
+
+```python
+def removeNthFromEnd(head, n):
+    arr = []
+    cur = head
+    while cur:
+        arr.append(cur)
+        cur = cur.next
+
+    length = len(arr)
+    target = length - n       # index of node to remove
+    prev = target - 1         # index of node before it
+
+    if prev < 0:              # removing the head
+        return arr[1] if length > 1 else None
+
+    arr[prev].next = arr[prev].next.next
+    return head
+```
+
+**Time:** O(n) — one pass  
+**Space:** O(n) — storing all nodes
+
+---
+
+## Approach 2 - Optimized Two Pointer (One Pass)
+
+**Idea:** Use two pointers `fast` and `slow` with a gap of `n+1` between them. When `fast` hits `None`, `slow` is sitting exactly at the node **before** the one we want to delete.
+
+**Why n+1 gap and not n?**
+- Gap of `n` → slow lands **on** the node to delete (can't delete, need the previous node!)
+- Gap of `n+1` → slow lands **before** the node to delete ✅
+
+**Visual walkthrough** (`n = 2`):
+
+```
+# Step 1: move fast alone n+1 = 3 steps
+
+dummy -> 1 -> 2 -> 3 -> 4 -> 5 -> None
+S
+         after 3 steps →         F
+
+# Step 2: move both until fast hits None
+
+dummy -> 1 -> 2 -> 3 -> 4 -> 5 -> None
+                   S              F(None) ← STOP
+
+# Step 3: delete
+slow.next = slow.next.next
+→ node3.next = node5  ✅
+```
+
+**Why a dummy node?** It handles head deletion cleanly. If `n = length`, fast falls off the list during the head start — slow stays at dummy, and `dummy.next = dummy.next.next` removes the head without any special casing.
+
+```python
+class Solution:
+    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:
+        dummy = ListNode(0)
+        dummy.next = head
+
+        fast = dummy
+        slow = dummy
+
+        # step 1: move fast n+1 steps ahead
+        for i in range(n + 1):
+            fast = fast.next
+
+        # step 2: move both until fast hits None
+        while fast is not None:
+            fast = fast.next
+            slow = slow.next
+
+        # step 3: skip over the target node
+        slow.next = slow.next.next
+
+        return dummy.next
+```
+
+**Time:** O(n) — one pass  
+**Space:** O(1) — no extra storage ✅
