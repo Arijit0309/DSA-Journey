@@ -1,0 +1,242 @@
+# LC 445 — Add Two Numbers II
+
+## Problem
+
+Given the heads of two **non-empty** linked lists `l1` and `l2` representing two non-negative integers stored in **most-significant → least-significant** order, return their sum as a linked list in the same order.
+
+---
+
+## Approach 1: Brute Force (Convert → Add → Rebuild)
+
+### Intuition
+
+Walk each list separately and rebuild each as a Python integer (`num * 10 + digit` shifts left each step). Add the two integers. Then extract digits using `% 10` and `// 10` (which gives them in reverse), collect into a list, reverse it, and build the linked list in the correct order.
+
+```python
+def addTwoNumbers_bruteforce(l1, l2):
+    # Step 1: Convert l1 to integer
+    num1 = 0
+    node = l1
+    while node is not None:
+        num1 = num1 * 10 + node.val
+        node = node.next
+
+    # Step 2: Convert l2 to integer
+    num2 = 0
+    node = l2
+    while node is not None:
+        num2 = num2 * 10 + node.val
+        node = node.next
+
+    # Step 3: Add
+    total = num1 + num2
+
+    # Step 4: Convert back to linked list
+    if total == 0:
+        return ListNode(0)
+
+    dummy = ListNode()
+    current = dummy
+
+    # collect digits in reverse (% 10 gives least significant first)
+    digits = []
+    while total > 0:
+        digits.append(total % 10)
+        total //= 10
+
+    # digits are in reverse, so iterate reversed
+    for d in reversed(digits):
+        current.next = ListNode(d)
+        current = current.next
+
+    return dummy.next
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(m + n) — traverse both lists + result digits |
+| **Space** | O(m + n) — Python int + result list |
+
+---
+
+## Approach 2: Brute Force 2 (Reverse → Add → Reverse)
+
+### Intuition
+
+Reverse both linked lists so digits go least-significant → most-significant (just like LC 2). Now add them exactly like LC 2 — walk both lists simultaneously, digit by digit, tracking carry. Then reverse the result list to restore the correct order.
+
+```python
+def addTwoNumbers_bruteforce2(l1, l2):
+    def reverse(node):
+        prev = None
+        while node:
+            nxt = node.next
+            node.next = prev
+            prev = node
+            node = nxt
+        return prev
+
+    # Step 1 — reverse both lists
+    l1 = reverse(l1)
+    l2 = reverse(l2)
+
+    # Step 2 — add digit by digit exactly like LC 2
+    dummy = ListNode(0)
+    cur = dummy
+    carry = 0
+
+    while l1 or l2 or carry:
+        val = carry
+        if l1:
+            val += l1.val
+            l1 = l1.next
+        if l2:
+            val += l2.val
+            l2 = l2.next
+
+        carry, digit = divmod(val, 10)
+        cur.next = ListNode(digit)
+        cur = cur.next
+
+    # Step 3 — reverse result to restore most-significant-first order
+    return reverse(dummy.next)
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(m + n) — three passes (reverse l1, reverse l2, reverse result) |
+| **Space** | O(1) — rewires existing pointers, no extra data structures |
+
+---
+
+## Approach 3: Optimal (Stack-Based)
+
+### Intuition
+
+Addition works right-to-left, but the list is left-to-right. Push both lists onto stacks so we can pop digits from the least-significant end. Add with carry, then **prepend** each new node so the result list builds itself in the correct order — no reversing needed.
+
+```python
+def addTwoNumbers_optimal(l1, l2):
+    s1, s2 = [], []
+
+    while l1:
+        s1.append(l1.val)
+        l1 = l1.next
+    while l2:
+        s2.append(l2.val)
+        l2 = l2.next
+
+    carry = 0
+    head = None
+
+    while s1 or s2 or carry:
+        val = carry
+        if s1: val += s1.pop()
+        if s2: val += s2.pop()
+
+        carry, digit = divmod(val, 10)
+
+        node = ListNode(digit)
+        node.next = head       # prepend — builds list in correct order
+        head = node
+
+    return head
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(m + n) — one pass each to fill stacks, one pass to add |
+| **Space** | O(m + n) — two stacks |
+
+---
+
+## Comparison
+
+| | BF 1: Int Conversion | BF 2: Reverse Lists | Optimal: Stack |
+|---|---|---|---|
+| **Time** | O(m + n) | O(m + n) | O(m + n) ✅ |
+| **Space** | O(m + n) | O(1) ✅ | O(m + n) |
+| **Modifies input?** | No | Yes | No |
+| **Extra data structures?** | Python int + str | None | Two stacks |
+| **Interview preferred?** | No | Acceptable | Yes ✅ |
+
+> BF 2 is actually the most space-efficient (O(1)), but it modifies the input lists — which interviewers may flag. The stack approach is the cleanest: no input mutation, no int/string tricks, pure linked-list logic.
+
+---
+
+## Manual Trace — `[7,2,4,3]` and `[5,6,4]`
+
+```
+Stack1: [7, 2, 4, 3]   (top = 3)
+Stack2: [5, 6, 4]      (top = 4)
+```
+
+| Step | s1.pop() | s2.pop() | carry in | val | digit | carry out | head so far |
+|---|---|---|---|---|---|---|---|
+| 1 | 3 | 4 | 0 | 7 | 7 | 0 | 7 |
+| 2 | 4 | 6 | 0 | 10 | 0 | 1 | 0 → 7 |
+| 3 | 2 | 5 | 1 | 8 | 8 | 0 | 8 → 0 → 7 |
+| 4 | 7 | — | 0 | 7 | 7 | 0 | 7 → 8 → 0 → 7 |
+
+**Result: `7 → 8 → 0 → 7`** ✅
+
+---
+
+## 🔑 Tricks Learned
+
+**Trick 1 — Stack reverses access order for free**
+Pushing a left-to-right list onto a stack and popping gives you right-to-left access — exactly the order addition needs. No actual reversal of the list required.
+
+**Trick 2 — Loop condition is `OR` (not `AND`), and includes carry**
+```python
+while s1 or s2 or carry:
+```
+Keep going as long as *any* stack has digits left **or** there's a carry still pending. Missing the `carry` condition is the most common bug — you'd drop a leading digit (e.g. `999 + 1 = 1000` would become `000`).
+
+**Trick 3 — Prepend, don't append**
+```python
+node.next = head
+head = node
+```
+Since we process digits least-significant → most-significant, prepending each new node automatically places the most-significant digit at the front. No second reverse pass needed.
+
+**Trick 4 — `divmod` handles digit + carry in one line**
+```python
+carry, digit = divmod(val, 10)
+```
+Cleaner than `digit = val % 10; carry = val // 10` — same thing, half the lines.
+
+**Trick 5 — Dummy node not needed here**
+Unlike most linked-list build problems, prepending means `head` is always the latest node — no dummy needed. Just track `head = None` and prepend into it.
+
+---
+
+## The 5-Question Framework
+
+| Question | Answer here |
+|---|---|
+| What do I **track**? | Two stacks `s1`, `s2` + `carry` + `head` pointer |
+| When do I **keep going**? | `while s1 or s2 or carry` |
+| What happens **each step**? | Pop from stacks, add + carry, prepend new node |
+| What are the **edge cases**? | One list longer, final carry creating extra digit (e.g. `999 + 1`) |
+| What do I **return**? | `head` (already points to most-significant digit) |
+
+---
+
+## Aha Moment
+
+The list is left-to-right but addition is right-to-left. A stack is just a list you read backwards for free — push everything in, pop in reverse. That one insight makes the whole problem clean.
+
+---
+
+## Related Problems
+
+- [LC 2 — Add Two Numbers](https://leetcode.com/problems/add-two-numbers/) — same idea but digits already stored in reverse order (easier)
+- [LC 21 — Merge Two Sorted Lists](https://leetcode.com/problems/merge-two-sorted-lists/) — two-pointer pattern on linked lists
+- [LC 206 — Reverse Linked List](https://leetcode.com/problems/reverse-linked-list/) — alternative approach: reverse both lists, add like LC 2, reverse result
