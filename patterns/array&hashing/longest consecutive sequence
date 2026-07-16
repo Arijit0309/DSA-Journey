@@ -1,0 +1,193 @@
+# LC 128 — Longest Consecutive Sequence
+
+## Problem
+
+Given an unsorted array of integers `nums`, return the length of the longest consecutive elements sequence. You must write an algorithm that runs in **O(n)** time.
+
+---
+
+## Approach 1: Brute Force (Sort → Scan)
+
+### Intuition
+
+Sort the array so consecutive elements end up adjacent. Then walk through once, extending a streak whenever the next element is exactly 1 more than the current. Reset the streak when there's a gap. Skip duplicates.
+
+```python
+def longestConsecutive_bruteforce(nums):
+    if not nums:
+        return 0
+
+    nums.sort()   # O(n log n)
+    longest = 1
+    streak = 1
+
+    for i in range(1, len(nums)):
+        if nums[i] == nums[i - 1]:
+            continue          # skip duplicates
+        if nums[i] == nums[i - 1] + 1:
+            streak += 1       # consecutive — extend streak
+        else:
+            streak = 1        # gap — reset
+
+        longest = max(longest, streak)
+
+    return longest
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n log n) — dominated by sort |
+| **Space** | O(1) — or O(n) depending on sort implementation |
+
+---
+
+## Approach 2: Brute Force 2 (Naive Hash Set — No Start Check)
+
+### Intuition
+
+Put all numbers in a hash set for O(1) lookup. For every number, walk upward (+1, +1, …) as long as the next number exists in the set. Track the longest streak seen. No skipping — we re-walk sequences from every element.
+
+```python
+def longestConsecutive_bruteforce2(nums):
+    num_set = set(nums)
+    longest = 0
+
+    for num in nums:
+        streak, current = 0, num
+
+        # walk upward from every number — O(n) per element in worst case
+        while current in num_set:
+            streak += 1
+            current += 1
+
+        longest = max(longest, streak)
+
+    return longest
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n²) — for a sequence like [1,2,3,...,n], starting from 1 walks n steps, from 2 walks n-1 steps, etc. |
+| **Space** | O(n) — hash set |
+
+---
+
+## Approach 3: Optimal (Hash Set + Start-of-Sequence Check)
+
+### Intuition
+
+Same hash set as Approach 2, but only start counting from a number where `num - 1` is **not** in the set. This means we only enter each sequence at its true beginning — every number is walked at most once across the entire loop.
+
+```python
+def longestConsecutive(nums):
+    num_set = set(nums)   # O(n) build
+    longest = 0
+
+    for num in num_set:
+        # only start from sequence beginnings
+        if (num - 1) not in num_set:
+            streak, current = 0, num
+
+            while current in num_set:   # O(1) lookup each time
+                streak += 1
+                current += 1
+
+            longest = max(longest, streak)
+
+    return longest
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n) — each number is visited at most twice (once when building set, once inside a streak walk) |
+| **Space** | O(n) — hash set |
+
+---
+
+## Comparison
+
+| | BF 1: Sort | BF 2: Naive Set | Optimal: Set + Start Check |
+|---|---|---|---|
+| **Time** | O(n log n) | O(n²) | O(n) ✅ |
+| **Space** | O(1) ✅ | O(n) | O(n) |
+| **Modifies input?** | Yes (sort) | No | No |
+| **Extra data structures?** | None | Hash set | Hash set |
+| **Interview preferred?** | No | No | Yes ✅ |
+
+> Approach 1 is clean and easy to explain but fails the O(n) requirement. Approach 2 shows the right idea (hash set) but misses the key optimization. The optimal solution adds exactly one `if` condition to Approach 2 — that single check is the entire insight.
+
+---
+
+## Manual Trace — `[100, 4, 200, 1, 3, 2]`
+
+```
+num_set = {1, 2, 3, 4, 100, 200}
+```
+
+| num | num - 1 in set? | Action | Streak |
+|---|---|---|---|
+| 100 | 99 → No | Start counting → 100 only | 1 |
+| 4 | 3 → Yes | Skip | — |
+| 200 | 199 → No | Start counting → 200 only | 1 |
+| 1 | 0 → No | Start counting → 1, 2, 3, 4 | **4** |
+| 3 | 2 → Yes | Skip | — |
+| 2 | 1 → Yes | Skip | — |
+
+**Result: `4`** ✅ (`[1, 2, 3, 4]`)
+
+---
+
+## 🔑 Tricks Learned
+
+**Trick 1 — Only start from sequence beginnings**
+```python
+if (num - 1) not in num_set:
+```
+A number with no left neighbour in the set is the true start of a sequence. Skipping everything else means each sequence is only walked once, turning O(n²) into O(n).
+
+**Trick 2 — Iterate over `num_set`, not `nums`**
+```python
+for num in num_set:   # not: for num in nums
+```
+Iterating the set automatically deduplicates. If `nums = [1, 1, 2]`, iterating `nums` would process `1` twice and potentially double-count. Iterating the set avoids this for free.
+
+**Trick 3 — Hash set lookup is O(1), not O(n)**
+The inner `while current in num_set` looks expensive but each lookup is O(1). The total number of lookups across the entire outer loop is O(n) — each element is a lookup target at most once per sequence it belongs to.
+
+**Trick 4 — The outer loop can use `num_set` instead of `nums`**
+Both work, but `num_set` is safer (no duplicates) and slightly faster in practice. The start-check `if (num - 1) not in num_set` handles the rest.
+
+**Trick 5 — Edge case: empty array**
+`set([])` is an empty set — the `for` loop simply doesn't execute and `longest = 0` is returned. No special case needed.
+
+---
+
+## The 5-Question Framework
+
+| Question | Answer here |
+|---|---|
+| What do I **track**? | `num_set` (all values), `streak` (current run length), `longest` (best seen) |
+| When do I **keep going**? | `while current in num_set` — as long as the next consecutive number exists |
+| What happens **each step**? | Increment `current` and `streak`; update `longest` after each sequence finishes |
+| What are the **edge cases**? | Empty array, all duplicates (`[1,1,1]` → 1), single element, negative numbers |
+| What do I **return**? | `longest` — the length of the best sequence found |
+
+---
+
+## Aha Moment
+
+The brute force re-walks every sequence from every starting point. The only fix needed is to identify where a sequence truly begins — a number with no left neighbour. That one `if (num - 1) not in num_set` check is the entire difference between O(n²) and O(n). The rest of the code is identical.
+
+---
+
+## Related Problems
+
+- [LC 200 — Number of Islands](https://leetcode.com/problems/number-of-islands/) — "find connected regions" pattern, similar start-from-boundary idea
+- [LC 298 — Binary Tree Longest Consecutive Sequence](https://leetcode.com/problems/binary-tree-longest-consecutive-sequence/) — same streak idea applied to trees
+- [LC 594 — Longest Harmonious Subsequence](https://leetcode.com/problems/longest-harmonious-subsequence/) — frequency map variant; find pairs differing by exactly 1
