@@ -1,0 +1,129 @@
+# LC 217 — Contains Duplicate
+
+## Problem
+
+Given an integer array `nums`, return `true` if any value appears **at least twice**, and `false` if every element is distinct.
+
+---
+
+## Approach 1: Brute Force (Nested Loop)
+
+### Intuition
+
+Compare every pair of elements. If any two are equal, return `true`. If the entire loop finishes without finding a match, return `false`.
+
+```python
+def containsDuplicate_bruteforce(nums):
+    for i in range(len(nums)):
+        for j in range(i + 1, len(nums)):
+            if nums[i] == nums[j]:
+                return True
+    return False
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n²) — every pair is compared |
+| **Space** | O(1) — no extra data structures |
+
+---
+
+## Approach 2: Optimal (Hash Set)
+
+### Intuition
+
+Walk through the array once. For each number, check if it already exists in a hash set — if yes, we found a duplicate. If no, add it to the set and move on.
+
+```python
+def containsDuplicate(nums):
+    seen = set()
+
+    for num in nums:
+        if num in seen:       # O(1) lookup
+            return True
+        seen.add(num)         # O(1) insert
+
+    return False
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n) — single pass, O(1) lookup and insert at each step |
+| **Space** | O(n) — hash set stores up to n elements |
+
+---
+
+## Comparison
+
+| | BF: Nested Loop | Optimal: Hash Set |
+|---|---|---|
+| **Time** | O(n²) | O(n) ✅ |
+| **Space** | O(1) ✅ | O(n) |
+| **Early exit?** | Yes | Yes ✅ |
+| **Interview preferred?** | No | Yes ✅ |
+
+> The brute force wins on space but is unusable at scale. The hash set trades O(n) space for a massive time improvement — standard tradeoff in hashing problems.
+
+---
+
+## Manual Trace — `[1, 2, 3, 1]`
+
+```
+seen = {}
+```
+
+| Step | num | in seen? | Action | seen after |
+|---|---|---|---|---|
+| 1 | 1 | No | Add | {1} |
+| 2 | 2 | No | Add | {1, 2} |
+| 3 | 3 | No | Add | {1, 2, 3} |
+| 4 | 1 | **Yes** | return True ✅ | — |
+
+---
+
+## 🔑 Tricks Learned
+
+**Trick 1 — Hash set gives O(1) membership check**
+```python
+if num in seen:
+```
+Checking membership in a list is O(n). In a set it's O(1). This single swap is what converts the brute force into an optimal solution.
+
+**Trick 2 — Early exit on first duplicate**
+We return immediately when a duplicate is found — no need to process the rest of the array. Best case (duplicate at index 1) is O(1).
+
+**Trick 3 — One-liner using set length**
+```python
+return len(set(nums)) < len(nums)
+```
+If the set is smaller than the original array, duplicates were removed — so one existed. Concise but processes the entire array before deciding; no early exit.
+
+---
+
+## The 5-Question Framework
+
+| Question | Answer here |
+|---|---|
+| What do I **track**? | `seen` — a set of all numbers encountered so far |
+| When do I **keep going**? | Until we find a duplicate or exhaust the array |
+| What happens **each step**? | Check if `num` is in `seen`; if yes return `True`, else add it |
+| What are the **edge cases**? | Empty array → `False`, single element → `False`, all duplicates → `True` early |
+| What do I **return**? | `True` if duplicate found, `False` if loop completes without one |
+
+---
+
+## Aha Moment
+
+Every "have I seen this before?" problem is a hash set problem. The set isn't storing anything complex — just the fact that a number was visited. That's the whole insight: trade O(n) space to answer membership questions in O(1) instead of O(n).
+
+---
+
+## Related Problems
+
+- [LC 1 — Two Sum](https://leetcode.com/problems/two-sum/) — same "check if complement exists" pattern using a hash map
+- [LC 219 — Contains Duplicate II](https://leetcode.com/problems/contains-duplicate-ii/) — same idea but duplicates must be within k distance
+- [LC 128 — Longest Consecutive Sequence](https://leetcode.com/problems/longest-consecutive-sequence/) — hash set for O(1) lookup, more complex streak logic
