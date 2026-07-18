@@ -1,0 +1,156 @@
+# LC 242 — Valid Anagram
+
+## Problem
+
+Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise.
+
+An anagram uses all the **same characters** with the **same frequencies** — just rearranged.
+
+---
+
+## Approach 1: Brute Force (Sort Both Strings)
+
+### Intuition
+
+If two strings are anagrams, sorting both will produce the exact same string. Sort `s` and `t` and compare — if they match, it's an anagram.
+
+```python
+def isAnagram_bruteforce(s, t):
+    if len(s) != len(t):
+        return False
+
+    return sorted(s) == sorted(t)
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n log n) — dominated by sorting |
+| **Space** | O(n) — sorted() creates a new list |
+
+---
+
+## Approach 2: Optimal (Frequency Count with Hash Map)
+
+### Intuition
+
+Count the frequency of every character in `s`, then subtract the frequency of every character in `t`. If all counts end up at zero, the two strings use the same characters in the same amounts — it's an anagram.
+
+```python
+def isAnagram(s, t):
+    if len(s) != len(t):
+        return False
+
+    count = {}
+
+    for c in s:
+        count[c] = count.get(c, 0) + 1   # increment for s
+
+    for c in t:
+        count[c] = count.get(c, 0) - 1   # decrement for t
+
+    return all(v == 0 for v in count.values())
+```
+
+### Alternative — using Counter
+
+```python
+from collections import Counter
+
+def isAnagram_counter(s, t):
+    return Counter(s) == Counter(t)
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n) — two passes through strings of length n |
+| **Space** | O(1) — at most 26 keys in the map (lowercase English letters) |
+
+---
+
+## Comparison
+
+| | BF: Sort | Optimal: Hash Map |
+|---|---|---|
+| **Time** | O(n log n) | O(n) ✅ |
+| **Space** | O(n) | O(1) ✅ |
+| **Early exit on length mismatch?** | Yes ✅ | Yes ✅ |
+| **Interview preferred?** | Acceptable | Yes ✅ |
+
+> Sorting is clean and readable but O(n log n). The hash map approach is O(n) time and O(1) space (bounded by alphabet size) — strictly better on both dimensions.
+
+---
+
+## Manual Trace — `s = "anagram"`, `t = "nagaram"`
+
+**After counting `s`:**
+```
+count = { a:3, n:1, g:1, r:1, m:1 }
+```
+
+**After decrementing with `t = "nagaram"`:**
+
+| char | before | after |
+|---|---|---|
+| n | 1 | 0 |
+| a | 3 | 2 → 1 → 0 |
+| g | 1 | 0 |
+| a | — | (already tracked) |
+| r | 1 | 0 |
+| a | — | (already tracked) |
+| m | 1 | 0 |
+
+```
+count = { a:0, n:0, g:0, r:0, m:0 }
+```
+
+All zeros → return `True` ✅
+
+---
+
+## 🔑 Tricks Learned
+
+**Trick 1 — Early exit on length mismatch**
+```python
+if len(s) != len(t):
+    return False
+```
+Anagrams must have the same length. Checking this upfront avoids unnecessary work and handles the edge case cleanly.
+
+**Trick 2 — Increment then decrement in one map**
+Instead of building two separate frequency maps and comparing them, use one map — add for `s`, subtract for `t`. If they cancel to zero, the strings match. Half the code, same result.
+
+**Trick 3 — Space is O(1), not O(n)**
+The map has at most 26 keys (lowercase English letters). That's a fixed constant regardless of input size — so space is technically O(1), not O(n).
+
+**Trick 4 — `dict.get(key, 0)` avoids KeyError**
+```python
+count[c] = count.get(c, 0) + 1
+```
+Cleaner than checking `if c in count` first. Returns 0 as a default if the key doesn't exist yet.
+
+**Trick 5 — Unicode / follow-up**
+If the problem allows Unicode characters (not just lowercase English), the approach is identical — the map just grows larger. The algorithm doesn't change.
+
+---
+
+## The 5-Question Framework
+
+| Question | Answer here |
+|---|---|
+| What do I **track**? | `count` — character frequencies, incremented for `s`, decremented for `t` |
+| When do I **keep going**? | Two full passes — one over `s`, one over `t` |
+| What happens **each step**? | +1 for each char in `s`, -1 for each char in `t` |
+| What are the **edge cases**? | Different lengths → `False` immediately; empty strings → `True` (both empty) |
+| What do I **return**? | `True` if all counts are zero, `False` otherwise |
+
+---
+
+## Aha Moment
+
+An anagram is just a frequency-matching problem. Sorting works but is slower than it needs to be. Once you realize "same characters, same counts", a hash map makes it O(n) — increment for one string, decrement for the other, check everything cancelled out.
+
+---
