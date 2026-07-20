@@ -1,0 +1,141 @@
+# LC 1 — Two Sum
+
+## Problem
+
+Given an integer array `nums` and an integer `target`, return the **indices** of the two numbers that add up to `target`. Exactly one solution exists, and you may not use the same element twice.
+
+---
+
+## Approach 1: Brute Force (Nested Loop)
+
+### Intuition
+
+Check every pair of elements. If any two numbers sum to the target, return their indices.
+
+```python
+def twoSum_bruteforce(nums, target):
+    for i in range(len(nums)):
+        for j in range(i + 1, len(nums)):
+            if nums[i] + nums[j] == target:
+                return [i, j]
+    return []
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n²) — every pair is checked |
+| **Space** | O(1) — no extra data structures |
+
+---
+
+## Approach 2: Optimal (One-Pass Hash Map)
+
+### Intuition
+
+For each number, compute `complement = target - num` and check if it already exists in the map. If yes, we found our pair — return both indices. If no, store the current number and its index, then move on.
+
+```python
+def twoSum(nums, target):
+    seen = {}
+
+    for i, num in enumerate(nums):
+        complement = target - num       # what we're looking for
+
+        if complement in seen:          # found it
+            return [seen[complement], i]
+
+        seen[num] = i                   # store current number and index
+
+    return []
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n) — single pass, O(1) lookup at each step |
+| **Space** | O(n) — hash map stores up to n elements |
+
+---
+
+## Comparison
+
+| | BF: Nested Loop | Optimal: Hash Map |
+|---|---|---|
+| **Time** | O(n²) | O(n) ✅ |
+| **Space** | O(1) ✅ | O(n) |
+| **Early exit?** | Yes | Yes ✅ |
+| **Interview preferred?** | No | Yes ✅ |
+
+> The brute force wins on space but is unusable at scale. The hash map trades O(n) space to answer "have I seen this complement before?" in O(1) at every step.
+
+---
+
+## Manual Trace — `nums = [2, 7, 11, 15]`, `target = 9`
+
+```
+seen = {}
+```
+
+| Step | i | num | complement | in seen? | Action | seen after |
+|---|---|---|---|---|---|---|
+| 1 | 0 | 2 | 7 | No | Store | {2: 0} |
+| 2 | 1 | 7 | 2 | **Yes** | return [0, 1] ✅ | — |
+
+---
+
+## 🔑 Tricks Learned
+
+**Trick 1 — Complement trick turns O(n²) into O(n)**
+```python
+complement = target - num
+```
+Instead of checking every pair, flip the question: "what number do I *need*?" Then check if it's already been seen. One lookup replaces one entire inner loop.
+
+**Trick 2 — Check before storing, never after**
+```python
+if complement in seen:          # check first
+    return [seen[complement], i]
+seen[num] = i                   # store after
+```
+Always check first, store after. If you store first and `target = 6` with `nums = [3, 3]`, you'd find index 0 as both the complement and current — returning `[0, 0]`, the same element twice. ❌
+
+**Trick 3 — Store index, not just value**
+```python
+seen[num] = i
+```
+We need to return indices, not values. The map stores `num → index` so when a complement is found, `seen[complement]` gives the index of the first number directly.
+
+**Trick 4 — `enumerate` gives index and value together**
+```python
+for i, num in enumerate(nums):
+```
+Cleaner than `for i in range(len(nums)): num = nums[i]`. Same result, half the noise.
+
+---
+
+## The 5-Question Framework
+
+| Question | Answer here |
+|---|---|
+| What do I **track**? | `seen` — maps each number to its index |
+| When do I **keep going**? | Until we find the complement or exhaust the array |
+| What happens **each step**? | Compute complement → check map → store current if not found |
+| What are the **edge cases**? | Duplicate values like `[3, 3]` → handled by checking before storing |
+| What do I **return**? | `[seen[complement], i]` — indices of the two numbers |
+
+---
+
+## Aha Moment
+
+Instead of asking "do these two numbers sum to target?" for every pair, flip it: "what number do I need to complete the sum?" Then a hash map answers that in O(1). The nested loop disappears entirely — replaced by a single lookup per element.
+
+---
+
+## Related Problems
+
+- [LC 167 — Two Sum II](https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/) — sorted input, so two pointers work directly
+- [LC 15 — 3Sum](https://leetcode.com/problems/3sum/) — fix one element, two-pointer for the rest
+- [LC 217 — Contains Duplicate](https://leetcode.com/problems/contains-duplicate/) — same "have I seen this before?" hash set pattern
