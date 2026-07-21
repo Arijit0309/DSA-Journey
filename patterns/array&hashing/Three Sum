@@ -1,0 +1,177 @@
+# LC 15 — Three Sum
+
+## Problem
+
+Given an integer array `nums`, return all triplets `[nums[i], nums[j], nums[k]]` such that they are distinct indices and the three elements sum to zero.
+
+---
+
+## Approach 1: Brute Force (Triple Loop)
+
+### Intuition
+
+Check every triplet. If three numbers sum to zero, add them to the result. Use a set to avoid duplicate triplets.
+
+```python
+def threeSum_bruteforce(nums):
+    result = set()
+    n = len(nums)
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                if nums[i] + nums[j] + nums[k] == 0:
+                    result.add(tuple(sorted([nums[i], nums[j], nums[k]])))
+    return [list(t) for t in result]
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n³) — every triplet is checked |
+| **Space** | O(n) — result set |
+
+---
+
+## Approach 2: Optimal (Sort + Two Pointers)
+
+### Intuition
+
+Sort the array. Fix one element `nums[i]`, then use two pointers (`left`, `right`) to find pairs that sum to `-nums[i]`. Sorting lets you move pointers intelligently — if the sum is too big, move `right` left; if too small, move `left` right. Skip duplicates explicitly to avoid repeat triplets in the output.
+
+```python
+def threeSum(nums):
+    nums.sort()
+    result = []
+
+    for i in range(len(nums)):
+        # Skip duplicate values for the fixed element
+        if i > 0 and nums[i] == nums[i - 1]:
+            continue
+
+        left, right = i + 1, len(nums) - 1
+
+        while left < right:
+            total = nums[i] + nums[left] + nums[right]
+
+            if total == 0:
+                result.append([nums[i], nums[left], nums[right]])
+                # Skip duplicates for left and right
+                while left < right and nums[left] == nums[left + 1]:
+                    left += 1
+                while left < right and nums[right] == nums[right - 1]:
+                    right -= 1
+                left += 1
+                right -= 1
+
+            elif total < 0:
+                left += 1    # need a bigger number
+            else:
+                right -= 1   # need a smaller number
+
+    return result
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n log n) sort + O(n²) two-pointer = **O(n²)** |
+| **Space** | O(1) extra (excluding output) |
+
+---
+
+## Comparison
+
+| | BF: Triple Loop | Optimal: Sort + Two Pointers |
+|---|---|---|
+| **Time** | O(n³) | O(n²) ✅ |
+| **Space** | O(n) | O(1) ✅ |
+| **Handles duplicates?** | Set dedup (hacky) | Explicit skips ✅ |
+| **Interview preferred?** | No | Yes ✅ |
+
+> Sorting is the unlock. Once the array is sorted, two pointers can scan the remaining pair in O(n) instead of O(n²), and duplicates can be skipped by peeking at neighbors.
+
+---
+
+## Manual Trace — `nums = [-1, 0, 1, 2, -1, -4]`
+
+After sorting: `[-4, -1, -1, 0, 1, 2]`
+
+| i | nums[i] | left | right | total | Action |
+|---|---|---|---|---|---|
+| 0 | -4 | 1 | 5 | -4+(-1)+2 = -3 | total < 0 → left++ |
+| 0 | -4 | 2 | 5 | -4+(-1)+2 = -3 | total < 0 → left++ |
+| 0 | -4 | 3 | 5 | -4+0+2 = -2 | total < 0 → left++ |
+| 0 | -4 | 4 | 5 | -4+1+2 = -1 | total < 0 → left++ |
+| 0 | -4 | 5 | 5 | left == right → exit while | |
+| 1 | -1 | 2 | 5 | -1+(-1)+2 = 0 | **Found [-1,-1,2]** ✅, skip dupes |
+| 1 | -1 | 3 | 4 | -1+0+1 = 0 | **Found [-1,0,1]** ✅, skip dupes |
+| 2 | -1 | — | — | nums[2]==nums[1] → skip (duplicate i) | |
+| 3 | 0 | 4 | 5 | 0+1+2 = 3 | total > 0 → right-- |
+| 3 | 0 | 4 | 4 | left == right → exit | |
+
+Result: `[[-1, -1, 2], [-1, 0, 1]]` ✅
+
+---
+
+## 🔑 Tricks Learned
+
+**Trick 1 — Sort first, then two-pointer**
+```python
+nums.sort()
+left, right = i + 1, len(nums) - 1
+```
+Sorting turns an O(n²) blind inner search into an O(n) directed scan. Once sorted, if the sum is too large, you know to shrink `right`; too small, grow `left`. No guessing.
+
+**Trick 2 — Fix one element, two-pointer the rest**
+```python
+for i in range(len(nums)):
+    left, right = i + 1, len(nums) - 1
+```
+3Sum becomes 2Sum on a subarray. Fix `i`, solve for `target = -nums[i]` using two pointers. This is the pattern: reduce N-sum to (N-1)-sum.
+
+**Trick 3 — Skip duplicates at every level**
+```python
+if i > 0 and nums[i] == nums[i - 1]:
+    continue                           # outer loop
+while left < right and nums[left] == nums[left + 1]:
+    left += 1                          # inner left
+while left < right and nums[right] == nums[right - 1]:
+    right -= 1                         # inner right
+```
+Three separate duplicate-skip guards — one for `i`, one for `left`, one for `right`. Missing any one of them produces repeated triplets in the output.
+
+**Trick 4 — After a match, move both pointers**
+```python
+left += 1
+right -= 1
+```
+After finding a valid triplet, both pointers need to advance (after the duplicate skips). Forgetting this causes an infinite loop.
+
+---
+
+## The 5-Question Framework
+
+| Question | Answer here |
+|---|---|
+| What do I **track**? | Sorted array; `left` and `right` pointers |
+| When do I **keep going**? | While `left < right` for each fixed `i` |
+| What happens **each step**? | Compute sum → shrink window or record triplet |
+| What are the **edge cases**? | Duplicate values at `i`, `left`, and `right` — all three must be skipped |
+| What do I **return**? | List of `[nums[i], nums[left], nums[right]]` triplets |
+
+---
+
+## Aha Moment
+
+Fixing one element reduces the problem by one dimension. Then sorting means you don't need to blindly search for the pair — you can steer toward the target. Too big? Move `right` in. Too small? Move `left` out. And since the array is sorted, duplicates are always adjacent, so skipping them is just a `while` peek at the next neighbor.
+
+---
+
+## Related Problems
+
+- [LC 1 — Two Sum](https://leetcode.com/problems/two-sum/) — the inner step of 3Sum, with a hash map instead of two pointers
+- [LC 167 — Two Sum II](https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/) — sorted two-pointer directly, no outer loop
+- [LC 18 — 4Sum](https://leetcode.com/problems/4sum/) — fix two elements, two-pointer the rest; same pattern one level deeper
+- [LC 16 — 3Sum Closest](https://leetcode.com/problems/3sum-closest/) — same sort + two-pointer, but track minimum distance to target instead of exact match
