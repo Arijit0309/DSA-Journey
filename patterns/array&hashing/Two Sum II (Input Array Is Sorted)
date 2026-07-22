@@ -1,0 +1,83 @@
+# LC 167 — Two Sum II (Input Array Is Sorted)
+
+## Problem
+
+Given a **1-indexed** sorted array `numbers` and a `target`, return the indices of the two numbers that add up to `target` as `[index1, index2]` where `index1 < index2`. Exactly one solution exists, and you may not use the same element twice.
+
+---
+
+## Approach 1: Brute Force (Nested Loop)
+
+### Intuition
+
+Check every pair. If two numbers sum to target, return their 1-indexed positions. Same as LC 1 brute force — ignores the sorted property entirely.
+
+```python
+def twoSum_bruteforce(numbers, target):
+    for i in range(len(numbers)):
+        for j in range(i + 1, len(numbers)):
+            if numbers[i] + numbers[j] == target:
+                return [i + 1, j + 1]
+    return []
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n²) — every pair is checked |
+| **Space** | O(1) — no extra data structures |
+
+---
+
+## Approach 2: Optimal (Two Pointers)
+
+### Intuition
+
+Start one pointer at the left end and one at the right end. Compute the sum:
+- If it equals the target → return both indices.
+- If it's too small → move `left` right (need a bigger number).
+- If it's too big → move `right` left (need a smaller number).
+
+Sorting guarantees every pointer move is meaningful — no backtracking needed.
+
+```python
+def twoSum(numbers, target):
+    left, right = 0, len(numbers) - 1
+
+    while left < right:
+        total = numbers[left] + numbers[right]
+
+        if total == target:
+            return [left + 1, right + 1]   # 1-indexed
+        elif total < target:
+            left += 1    # need a bigger number
+        else:
+            right -= 1   # need a smaller number
+
+    return []
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n) — single pass with two pointers |
+| **Space** | O(1) — no extra data structures |
+
+---
+
+## Comparison
+
+| | BF: Nested Loop | Optimal: Two Pointers |
+|---|---|---|
+| **Time** | O(n²) | O(n) ✅ |
+| **Space** | O(1) ✅ | O(1) ✅ |
+| **Uses sorted property?** | No | Yes ✅ |
+| **Interview preferred?** | No | Yes ✅ |
+
+> Two pointers win on time AND space here. Unlike LC 1 (unsorted), no hash map is needed — the sorted order does that job for free.
+
+---
+
+## Manual Trace — `numbers = [2, 7, 11, 15]`, `target = 9`
