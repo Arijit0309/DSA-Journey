@@ -1,0 +1,92 @@
+# LC 16 — 3Sum Closest
+
+## Problem
+
+Given an integer array `nums` and an integer `target`, return the sum of three integers such that the sum is **closest to target**. Exactly one answer exists.
+
+---
+
+## Approach 1: Brute Force (Triple Loop)
+
+### Intuition
+
+Check every triplet. Track whichever sum is closest to target so far.
+
+```python
+def threeSumClosest_bruteforce(nums, target):
+    closest = float('inf')
+
+    for i in range(len(nums)):
+        for j in range(i + 1, len(nums)):
+            for k in range(j + 1, len(nums)):
+                total = nums[i] + nums[j] + nums[k]
+                if abs(total - target) < abs(closest - target):
+                    closest = total
+
+    return closest
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n³) — every triplet is checked |
+| **Space** | O(1) — no extra data structures |
+
+---
+
+## Approach 2: Optimal (Sort + Two Pointers)
+
+### Intuition
+
+Sort the array. Fix one element `nums[i]`, then use two pointers to scan the rest. At each step, compute the triplet sum and update `closest` if it's nearer to `target`. Use the sorted order to steer: if the sum is too small, move `left` right; if too big, move `right` left. If you hit exactly `target`, return immediately — can't get closer.
+
+```python
+def threeSumClosest(nums, target):
+    nums.sort()
+    closest = float('inf')
+
+    for i in range(len(nums) - 2):
+        left, right = i + 1, len(nums) - 1
+
+        while left < right:
+            total = nums[i] + nums[left] + nums[right]
+
+            if abs(total - target) < abs(closest - target):
+                closest = total
+
+            if total == target:
+                return total           # can't get closer
+            elif total < target:
+                left += 1              # need a bigger number
+            else:
+                right -= 1             # need a smaller number
+
+    return closest
+```
+
+### Complexity
+
+| | |
+|---|---|
+| **Time** | O(n log n) sort + O(n²) two-pointer = **O(n²)** |
+| **Space** | O(1) extra (excluding sort) |
+
+---
+
+## Comparison
+
+| | BF: Triple Loop | Optimal: Sort + Two Pointers |
+|---|---|---|
+| **Time** | O(n³) | O(n²) ✅ |
+| **Space** | O(1) ✅ | O(1) ✅ |
+| **Early exit?** | No | Yes (exact match) ✅ |
+| **Interview preferred?** | No | Yes ✅ |
+
+> Unlike 3Sum (exact match), there are no duplicates to skip here — every triplet could technically be the closest, so you never skip a value. The only change from 3Sum is swapping `== 0` logic for a distance comparison.
+
+---
+
+## Manual Trace — `nums = [-1, 2, 1, -4]`, `target = 1`
+
+After sorting: `[-4, -1, 1, 2]`
